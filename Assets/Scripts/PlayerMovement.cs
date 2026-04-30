@@ -16,4 +16,23 @@ public class PlayerMovement : MonoBehaviour
         float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity * 100f * Time.deltaTime;
         transform.Rotate(Vector3.up * mouseX);
     }
+
+  void OnControllerColliderHit(ControllerColliderHit hit)
+
+{
+
+    Rigidbody rb = hit.collider.attachedRigidbody;
+
+    if (rb != null && !rb.isKinematic)
+
+    {
+
+        Vector3 pushDir = new Vector3(hit.moveDirection.x, 0, hit.moveDirection.z);
+
+        rb.AddForce(pushDir * 1f, ForceMode.VelocityChange);
+
+    }
+
+}
+
 }

@@ -13,14 +13,33 @@ public class DoorController : MonoBehaviour
         closedRotation = transform.rotation;
         openRotation = Quaternion.Euler(0, transform.eulerAngles.y + openAngle, 0);
     }
-
-    public void ToggleDoor()
+  public void ToggleDoor()
+  {
+    if (!isOpen)
     {
-        isOpen = !isOpen;
+        // Only check when OPENING
+        RaycastHit hit;
 
-        if (isOpen)
-            transform.rotation = openRotation;
-        else
-            transform.rotation = closedRotation;
+        if (Physics.Raycast(transform.position, transform.forward, out hit, 2f))
+        {
+            if (hit.collider.CompareTag("Barricade"))
+            {
+                return; // BLOCK opening only
+            }
+        }
     }
+
+    isOpen = !isOpen;
+
+    if (isOpen)
+        transform.rotation = openRotation;
+    else
+        transform.rotation = closedRotation;
+
+    Debug.Log("Door state changed");
+
+    PathManager.Instance.RecalculatePath();
+
+  }
+ 
 }
