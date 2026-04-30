@@ -1005,7 +1005,6 @@ Transform:
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 2575497086180136731}
-  - {fileID: 7277110385906500556}
   - {fileID: 2896372174822210852}
   - {fileID: 3652934614003067295}
   - {fileID: 3195106949432962599}
