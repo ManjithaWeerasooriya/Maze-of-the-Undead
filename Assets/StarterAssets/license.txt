@@ -1,6 +1,2 @@
-<<<<<<< HEAD
 This package is licensed under the Unity Companion License. 
-=======
-This package is licensed under the Unity Companion License. 
->>>>>>> origin/feature/level-01-environment-setup
 For full license terms, please see: https://unity3d.com/legal/licenses/Unity_Companion_License
