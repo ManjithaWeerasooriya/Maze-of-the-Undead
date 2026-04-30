@@ -264,28 +264,5 @@ namespace StarterAssets
 			// when selected, draw a gizmo in the position of, and matching radius of, the grounded collider
 			Gizmos.DrawSphere(new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z), GroundedRadius);
 		}
-<<<<<<< HEAD
-		private void OnControllerColliderHit(ControllerColliderHit hit)
-{
-    Rigidbody rb = hit.collider.attachedRigidbody;
-
-    // only push objects with rigidbody
-    if (rb == null || rb.isKinematic)
-        return;
-
-    // only push barricades
-    if (!hit.collider.CompareTag("Barricade"))
-        return;
-
-    // horizontal push direction only
-    Vector3 pushDir = new Vector3(hit.moveDirection.x, 0, hit.moveDirection.z);
-
-    // apply force (tune this value if needed)
-    rb.AddForce(pushDir * 5f, ForceMode.Impulse);
-}
 	}
-	
-=======
-	}
->>>>>>> origin/feature/level-01-environment-setup
 }
