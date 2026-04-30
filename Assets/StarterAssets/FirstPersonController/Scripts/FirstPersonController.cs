@@ -264,6 +264,7 @@ namespace StarterAssets
 			// when selected, draw a gizmo in the position of, and matching radius of, the grounded collider
 			Gizmos.DrawSphere(new Vector3(transform.position.x, transform.position.y - GroundedOffset, transform.position.z), GroundedRadius);
 		}
+<<<<<<< HEAD
 		private void OnControllerColliderHit(ControllerColliderHit hit)
 {
     Rigidbody rb = hit.collider.attachedRigidbody;
@@ -284,4 +285,7 @@ namespace StarterAssets
 }
 	}
 	
+=======
+	}
+>>>>>>> origin/feature/level-01-environment-setup
 }
