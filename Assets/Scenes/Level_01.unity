@@ -119,6 +119,24 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
+--- !u!1 &1355060600 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4367286229833336264, guid: 4ba0c3f6a5adf4d9faa362048d6c6e0c, type: 3}
+  m_PrefabInstance: {fileID: 1598115543}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &1355060608
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1355060600}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 99f9a8b9cb8104503a3ab6411b7eef1a, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerInteraction
+  interactDistance: 3
 --- !u!1001 &1598115543
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -128,8 +146,20 @@ PrefabInstance:
     m_TransformParent: {fileID: 0}
     m_Modifications:
     - target: {fileID: 489852918637377416, guid: 4ba0c3f6a5adf4d9faa362048d6c6e0c, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 489852918637377416, guid: 4ba0c3f6a5adf4d9faa362048d6c6e0c, type: 3}
       propertyPath: m_LocalPosition.y
       value: 2.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 489852918637377416, guid: 4ba0c3f6a5adf4d9faa362048d6c6e0c, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 489852918637377422, guid: 4ba0c3f6a5adf4d9faa362048d6c6e0c, type: 3}
+      propertyPath: m_Enabled
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 1949652220129778332, guid: 4ba0c3f6a5adf4d9faa362048d6c6e0c, type: 3}
       propertyPath: m_LocalPosition.x
@@ -195,10 +225,14 @@ PrefabInstance:
       propertyPath: m_Name
       value: Player
       objectReference: {fileID: 0}
-    m_RemovedComponents: []
+    m_RemovedComponents:
+    - {fileID: 5194297871282473393, guid: 4ba0c3f6a5adf4d9faa362048d6c6e0c, type: 3}
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4367286229833336264, guid: 4ba0c3f6a5adf4d9faa362048d6c6e0c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1355060608}
   m_SourcePrefab: {fileID: 100100000, guid: 4ba0c3f6a5adf4d9faa362048d6c6e0c, type: 3}
 --- !u!33 &889657846917771354
 MeshFilter:
