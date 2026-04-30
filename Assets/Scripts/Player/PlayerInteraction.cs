@@ -13,7 +13,7 @@ public class PlayerInteraction : MonoBehaviour
 
             if (Physics.Raycast(ray, out hit, interactDistance))
             {
-                DoorController door = hit.collider.GetComponent<DoorController>();
+                DoorController door = hit.collider.GetComponentInParent<DoorController>();
 
                 if (door != null)
                 {
