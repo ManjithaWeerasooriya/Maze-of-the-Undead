@@ -235,5 +235,41 @@ namespace StarterAssets
 				_verticalVelocity += Gravity * Time.deltaTime;
 			}
 		}
+		float pushCooldown = 0f;
+
+		void OnControllerColliderHit(ControllerColliderHit hit)
+		{
+			if (pushCooldown > 0f)
+			{
+				pushCooldown -= Time.deltaTime;
+				return;
+			}
+
+			Rigidbody rb = hit.collider.attachedRigidbody;
+
+			if (rb == null || rb.isKinematic)
+				return;
+
+			if (hit.moveDirection.y < -0.3f)
+				return;
+
+			// 🚨 NEW: STOP pushing if obstacle ahead
+			RaycastHit wallHit;
+			if (Physics.Raycast(rb.position, hit.moveDirection, out wallHit, 0.6f))
+			{
+				if (!wallHit.collider.CompareTag("Player"))
+				{
+					return; // 🚫 blocked → don't push
+				}
+			}
+
+			Vector3 pushDir = new Vector3(hit.moveDirection.x, 0, hit.moveDirection.z);
+
+			float pushForce = 4f;
+
+			rb.AddForce(pushDir * pushForce, ForceMode.Impulse);
+
+			pushCooldown = 0.2f;
+		}
 	}
 }
