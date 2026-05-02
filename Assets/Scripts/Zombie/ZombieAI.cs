@@ -1,22 +1,30 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class ZombieAI : MonoBehaviour
 {
-    public Transform player;
     public float speed = 6f;
+
+    public List<Transform> path;
+    private int index = 0;
 
     void Update()
     {
-        if (player == null) return;
+        FollowPath();
+    }
 
-        Vector3 direction = (player.position - transform.position).normalized;
+    void FollowPath()
+    {
+        if (path == null || path.Count == 0) return;
 
+        Transform target = path[index];
+
+        Vector3 direction = (target.position - transform.position).normalized;
         transform.position += direction * speed * Time.deltaTime;
 
-        if (direction != Vector3.zero)
+        if (Vector3.Distance(transform.position, target.position) < 0.2f)
         {
-            Quaternion targetRotation = Quaternion.LookRotation(direction);
-            transform.rotation = Quaternion.Slerp(transform.rotation, targetRotation, 0.1f);
+            index++;
         }
     }
 }
