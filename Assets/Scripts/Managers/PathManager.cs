@@ -3,6 +3,7 @@ using UnityEngine;
 public class PathManager : MonoBehaviour
 {
     public static PathManager Instance;
+    public static event System.Action OnPathChanged;
 
     void Awake()
     {
@@ -11,6 +12,6 @@ public class PathManager : MonoBehaviour
 
     public void RecalculatePath()
     {
-        Debug.Log("Recalculating path...");
+        OnPathChanged?.Invoke();
     }
 }
