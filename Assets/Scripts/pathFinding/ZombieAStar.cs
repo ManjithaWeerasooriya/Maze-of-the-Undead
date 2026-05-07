@@ -10,16 +10,24 @@ public class ZombieAStar : MonoBehaviour
     [Header("Path Update")]
     public float pathUpdateRate = 0.2f;
 
+    [Header("Attack")]
+    public float attackRange = 2f;
+    public float attackCooldown = 1.5f;
+
     [Header("Debug")]
     public bool showDebugPath = true;
 
     private NavMeshAgent agent;
+    private Animator animator;
     private List<Vector3> currentPath = new List<Vector3>();
+
     private float timer;
+    private float lastAttackTime;
 
     private void Start()
     {
         agent = GetComponent<NavMeshAgent>();
+        animator = GetComponent<Animator>();
 
         if (agent == null)
         {
@@ -41,12 +49,58 @@ public class ZombieAStar : MonoBehaviour
         if (player == null || agent == null)
             return;
 
+        float distanceToPlayer = Vector3.Distance(transform.position, player.position);
+
+        if (distanceToPlayer <= attackRange)
+        {
+            AttackPlayer();
+        }
+        else
+        {
+            ChasePlayer();
+        }
+
+        if (animator != null)
+        {
+            animator.SetFloat("Speed", agent.velocity.magnitude);
+        }
+    }
+
+    private void ChasePlayer()
+    {
+        agent.isStopped = false;
+
         timer += Time.deltaTime;
 
         if (timer >= pathUpdateRate)
         {
             timer = 0f;
             UpdatePathToPlayer();
+        }
+    }
+
+    private void AttackPlayer()
+    {
+        agent.isStopped = true;
+
+        Vector3 lookDirection = player.position - transform.position;
+        lookDirection.y = 0f;
+
+        if (lookDirection.sqrMagnitude > 0.01f)
+        {
+            transform.rotation = Quaternion.LookRotation(lookDirection);
+        }
+
+        if (Time.time >= lastAttackTime + attackCooldown)
+        {
+            lastAttackTime = Time.time;
+
+            if (animator != null)
+            {
+                animator.SetTrigger("Attack");
+            }
+
+            Debug.Log("Zombie attacks player!");
         }
     }
 
@@ -110,6 +164,9 @@ public class ZombieAStar : MonoBehaviour
 
     private void OnDrawGizmos()
     {
+        Gizmos.color = Color.yellow;
+        Gizmos.DrawWireSphere(transform.position, attackRange);
+
         if (!showDebugPath || currentPath == null || currentPath.Count < 2)
             return;
 
