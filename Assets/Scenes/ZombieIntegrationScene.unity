@@ -544,7 +544,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::PathfindingGrid
   gridWorldSize: {x: 300, y: 300}
   nodeRadius: 0.5
-  navMeshSampleRadius: 5
+  navMeshSampleRadius: 6
   wallEdgeBuffer: 1
 --- !u!4 &1672497252
 Transform:
