@@ -2,110 +2,192 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
+[RequireComponent(typeof(NavMeshAgent))]
 public class ZombieAStar : MonoBehaviour
 {
     [Header("Target")]
     public Transform player;
 
-    [Header("Path Update")]
-    public float pathUpdateRate = 0.2f;
+    [Header("A* Path Settings")]
+    public float pathUpdateRate = 0.5f;
+    public float waypointTolerance = 1.0f;
+
+    [Header("Attack Settings")]
+    public float attackRange = 2.0f;
+    public float attackCooldown = 1.5f;
+    public float rotationSpeed = 8f;
+
+    [Header("Animation")]
+    public Animator animator;
+    public string walkBoolName = "isWalking";
+    public string attackTriggerName = "Attack";
 
     [Header("Debug")]
     public bool showDebugPath = true;
+    public float debugLogInterval = 1.0f;
 
     private NavMeshAgent agent;
     private List<Vector3> currentPath = new List<Vector3>();
-    private float timer;
+    private int waypointIndex = 0;
+    private float pathTimer = 0f;
+    private float debugLogTimer = 0f;
+    private float nextAttackTime = 0f;
 
     private void Start()
     {
         agent = GetComponent<NavMeshAgent>();
 
-        if (agent == null)
+        if (animator == null)
         {
-            Debug.LogError("Zombie needs NavMeshAgent component.");
-            return;
+            animator = GetComponentInChildren<Animator>();
         }
 
         if (player == null)
         {
-            Debug.LogError("Player is not assigned.");
+            Debug.LogError("[ZombieAStar] Player is not assigned.");
+            enabled = false;
             return;
         }
 
-        timer = pathUpdateRate;
+        if (PathfindingGrid.Instance == null)
+        {
+            Debug.LogError("[ZombieAStar] PathfindingGrid is missing from the scene.");
+            enabled = false;
+            return;
+        }
+
+        CalculatePath();
     }
 
     private void Update()
     {
-        if (player == null || agent == null)
-            return;
+        float distanceToPlayer = Vector3.Distance(transform.position, player.position);
 
-        timer += Time.deltaTime;
-
-        if (timer >= pathUpdateRate)
+        if (distanceToPlayer <= attackRange)
         {
-            timer = 0f;
-            UpdatePathToPlayer();
+            AttackPlayer();
+            return;
+        }
+
+        agent.isStopped = false;
+
+        if (animator != null)
+        {
+            animator.SetBool(walkBoolName, agent.velocity.magnitude > 0.1f);
+        }
+
+        pathTimer += Time.deltaTime;
+        debugLogTimer += Time.deltaTime;
+
+        if (pathTimer >= pathUpdateRate)
+        {
+            pathTimer = 0f;
+            CalculatePath();
+        }
+
+        if (debugLogTimer >= debugLogInterval)
+        {
+            debugLogTimer = 0f;
+            Debug.Log($"[ZombieAStar] Distance to player: {distanceToPlayer:F1}m | Waypoints: {currentPath?.Count ?? 0} | Current index: {waypointIndex}");
+        }
+
+        FollowPath();
+    }
+
+    private void AttackPlayer()
+    {
+        agent.isStopped = true;
+        agent.ResetPath();
+
+        if (animator != null)
+        {
+            animator.SetBool(walkBoolName, false);
+        }
+
+        FacePlayer();
+
+        if (Time.time >= nextAttackTime)
+        {
+            nextAttackTime = Time.time + attackCooldown;
+
+            if (animator != null)
+            {
+                animator.SetTrigger(attackTriggerName);
+            }
+
+            Debug.Log("[ZombieAStar] Zombie attacks player!");
         }
     }
 
-    private void UpdatePathToPlayer()
+    private void FacePlayer()
     {
-        NavMeshHit zombieHit;
-        NavMeshHit playerHit;
+        Vector3 direction = player.position - transform.position;
+        direction.y = 0f;
 
-        bool zombieFound = NavMesh.SamplePosition(
-            transform.position,
-            out zombieHit,
-            5f,
-            NavMesh.AllAreas
+        if (direction.sqrMagnitude <= 0.01f)
+            return;
+
+        Quaternion targetRotation = Quaternion.LookRotation(direction);
+
+        transform.rotation = Quaternion.Slerp(
+            transform.rotation,
+            targetRotation,
+            rotationSpeed * Time.deltaTime
         );
+    }
 
-        bool playerFound = NavMesh.SamplePosition(
-            player.position,
-            out playerHit,
-            5f,
-            NavMesh.AllAreas
-        );
+    private void CalculatePath()
+    {
+        if (player == null) return;
 
-        if (!zombieFound)
+        List<Vector3> newPath = AStarPathfinder.FindPath(transform.position, player.position);
+
+        if (newPath == null || newPath.Count == 0)
         {
-            Debug.LogWarning("Zombie is not on or near NavMesh.");
+            agent.SetDestination(player.position);
             return;
         }
 
-        if (!playerFound)
-        {
-            Debug.LogWarning("Player is not on or near NavMesh.");
+        currentPath = newPath;
+        waypointIndex = 0;
+    }
+
+    private void FollowPath()
+    {
+        if (currentPath == null || currentPath.Count == 0)
             return;
-        }
 
-        NavMeshPath calculatedPath = new NavMeshPath();
+        if (waypointIndex >= currentPath.Count)
+            return;
 
-        bool pathFound = NavMesh.CalculatePath(
-            zombieHit.position,
-            playerHit.position,
-            NavMesh.AllAreas,
-            calculatedPath
+        Vector3 targetWaypoint = currentPath[waypointIndex];
+
+        float distToWaypoint = Vector3.Distance(
+            new Vector3(transform.position.x, 0, transform.position.z),
+            new Vector3(targetWaypoint.x, 0, targetWaypoint.z)
         );
 
-        if (!pathFound || calculatedPath.status != NavMeshPathStatus.PathComplete)
+        if (distToWaypoint <= waypointTolerance)
         {
-            Debug.LogWarning("No complete path found.");
-            return;
+            waypointIndex++;
+
+            if (waypointIndex >= currentPath.Count)
+                return;
+
+            targetWaypoint = currentPath[waypointIndex];
         }
 
-        currentPath.Clear();
+        agent.SetDestination(targetWaypoint);
+    }
 
-        for (int i = 0; i < calculatedPath.corners.Length; i++)
-        {
-            currentPath.Add(calculatedPath.corners[i]);
-        }
+    private void OnEnable()
+    {
+        PathManager.OnPathChanged += CalculatePath;
+    }
 
-        agent.SetDestination(playerHit.position);
-
-        Debug.Log("Path updated to moving player. Points: " + currentPath.Count);
+    private void OnDisable()
+    {
+        PathManager.OnPathChanged -= CalculatePath;
     }
 
     private void OnDrawGizmos()
