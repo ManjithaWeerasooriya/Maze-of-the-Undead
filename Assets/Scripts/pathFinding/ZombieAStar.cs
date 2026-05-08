@@ -12,6 +12,16 @@ public class ZombieAStar : MonoBehaviour
     public float pathUpdateRate = 0.5f;
     public float waypointTolerance = 1.0f;
 
+    [Header("Attack Settings")]
+    public float attackRange = 2.0f;
+    public float attackCooldown = 1.5f;
+    public float rotationSpeed = 8f;
+
+    [Header("Animation")]
+    public Animator animator;
+    public string walkBoolName = "isWalking";
+    public string attackTriggerName = "Attack";
+
     [Header("Debug")]
     public bool showDebugPath = true;
     public float debugLogInterval = 1.0f;
@@ -21,10 +31,16 @@ public class ZombieAStar : MonoBehaviour
     private int waypointIndex = 0;
     private float pathTimer = 0f;
     private float debugLogTimer = 0f;
+    private float nextAttackTime = 0f;
 
     private void Start()
     {
         agent = GetComponent<NavMeshAgent>();
+
+        if (animator == null)
+        {
+            animator = GetComponentInChildren<Animator>();
+        }
 
         if (player == null)
         {
@@ -45,6 +61,21 @@ public class ZombieAStar : MonoBehaviour
 
     private void Update()
     {
+        float distanceToPlayer = Vector3.Distance(transform.position, player.position);
+
+        if (distanceToPlayer <= attackRange)
+        {
+            AttackPlayer();
+            return;
+        }
+
+        agent.isStopped = false;
+
+        if (animator != null)
+        {
+            animator.SetBool(walkBoolName, agent.velocity.magnitude > 0.1f);
+        }
+
         pathTimer += Time.deltaTime;
         debugLogTimer += Time.deltaTime;
 
@@ -57,11 +88,52 @@ public class ZombieAStar : MonoBehaviour
         if (debugLogTimer >= debugLogInterval)
         {
             debugLogTimer = 0f;
-            float distance = Vector3.Distance(transform.position, player.position);
-            Debug.Log($"[ZombieAStar] Distance to player: {distance:F1}m | Waypoints: {currentPath?.Count ?? 0} | Current index: {waypointIndex}");
+            Debug.Log($"[ZombieAStar] Distance to player: {distanceToPlayer:F1}m | Waypoints: {currentPath?.Count ?? 0} | Current index: {waypointIndex}");
         }
 
         FollowPath();
+    }
+
+    private void AttackPlayer()
+    {
+        agent.isStopped = true;
+        agent.ResetPath();
+
+        if (animator != null)
+        {
+            animator.SetBool(walkBoolName, false);
+        }
+
+        FacePlayer();
+
+        if (Time.time >= nextAttackTime)
+        {
+            nextAttackTime = Time.time + attackCooldown;
+
+            if (animator != null)
+            {
+                animator.SetTrigger(attackTriggerName);
+            }
+
+            Debug.Log("[ZombieAStar] Zombie attacks player!");
+        }
+    }
+
+    private void FacePlayer()
+    {
+        Vector3 direction = player.position - transform.position;
+        direction.y = 0f;
+
+        if (direction.sqrMagnitude <= 0.01f)
+            return;
+
+        Quaternion targetRotation = Quaternion.LookRotation(direction);
+
+        transform.rotation = Quaternion.Slerp(
+            transform.rotation,
+            targetRotation,
+            rotationSpeed * Time.deltaTime
+        );
     }
 
     private void CalculatePath()
