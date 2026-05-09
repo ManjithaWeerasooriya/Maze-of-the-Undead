@@ -13,6 +13,7 @@ public class VictoryUI : MonoBehaviour
     {
         victoryPanel.SetActive(true);
 
+        Debug.Log("Confetti playing");
         confetti.Play();
 
         Time.timeScale = 0f;

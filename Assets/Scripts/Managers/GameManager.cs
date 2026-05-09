@@ -20,6 +20,10 @@ public class GameManager : MonoBehaviour
     [Tooltip("Optional UI panel toggled on when the player wins.")]
     [SerializeField] private GameObject winScreen;
 
+    [SerializeField] private VictoryUI victoryUI;
+
+    [SerializeField] private GameObject gameOverPanel;
+
     public GameState State { get; private set; } = GameState.Playing;
 
     /// <summary>Raised whenever the game state changes (Playing -> Won, etc.).</summary>
@@ -72,37 +76,63 @@ public class GameManager : MonoBehaviour
     public void WinLevel()
     {
         Debug.Log("[GameManager] WinLevel() invoked.", this);
+
         SetState(GameState.Won);
 
-        if (winScreen != null)
+        // 👉 Use VictoryUI instead of raw winScreen
+        if (victoryUI != null)
         {
-            winScreen.SetActive(true);
+            Debug.Log("[GameManager] Calling VictoryUI.ShowVictory()");
+            victoryUI.ShowVictory();
+        }
+        else
+        {
+            Debug.LogWarning("[GameManager] VictoryUI not assigned, falling back to winScreen");
 
-            // SetActive(true) on the panel doesn't help if a parent Canvas/GameObject is disabled.
-            if (!winScreen.activeInHierarchy)
+            if (winScreen != null)
             {
-                Debug.LogError(
-                    $"[GameManager] '{winScreen.name}' was activated but is not active in hierarchy — " +
-                    "an ancestor (likely its Canvas) is disabled. Enable the parent chain.", winScreen);
-            }
+                winScreen.SetActive(true);
 
-            // Animator + Time.timeScale = 0 silently breaks entry animations on Normal update mode.
-            var anim = winScreen.GetComponentInChildren<Animator>(true);
-            if (pauseOnWin && anim != null && anim.updateMode == AnimatorUpdateMode.Normal)
-            {
-                Debug.LogWarning(
-                    $"[GameManager] Animator on '{anim.name}' uses Normal update mode but pauseOnWin freezes time. " +
-                    "Set its Update Mode to 'Unscaled Time' or disable pauseOnWin so the win animation can play.", anim);
+                if (!winScreen.activeInHierarchy)
+                {
+                    Debug.LogError(
+                        $"[GameManager] '{winScreen.name}' not active in hierarchy. Check parent Canvas.",
+                        winScreen);
+                }
             }
         }
 
+        // Cursor handling
         if (unlockCursorOnWin)
         {
             Cursor.lockState = CursorLockMode.None;
             Cursor.visible = true;
         }
 
-        if (pauseOnWin) Time.timeScale = 0f;
+        // Pause AFTER UI + particles trigger
+        if (pauseOnWin)
+        {
+            Invoke(nameof(PauseGame), 0.05f);
+        }
+    }
+    public void LoseLevel()
+    {
+        if (State != GameState.Playing) return;
+
+        SetState(GameState.Lost);
+
+        if (gameOverPanel != null)
+            gameOverPanel.SetActive(true);
+
+        Time.timeScale = 0f;
+
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
+    }
+
+    private void PauseGame()
+    {
+        Time.timeScale = 0f;
     }
 
     public void RestartLevel()

@@ -6,6 +6,7 @@ public class PauseUI : MonoBehaviour
     public GameObject pausePanel;
     public string gameScene;
     public string mainMenuScene;
+    public GameObject gameOverPanel;
 
     bool isPaused = false;
 
@@ -13,6 +14,10 @@ public class PauseUI : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Escape))
         {
+            if (GameManager.Instance != null && GameManager.Instance.State != GameManager.GameState.Playing)
+            {
+                return;
+            }
             if (isPaused) Resume();
             else Pause();
         }

@@ -15,6 +15,7 @@ public class ZombieAStar : MonoBehaviour
     [Header("Attack Settings")]
     public float attackRange = 2.0f;
     public float attackCooldown = 1.5f;
+    public float damage = 10f; // 🔥 ADDED
     public float rotationSpeed = 8f;
 
     [Header("Animation")]
@@ -33,6 +34,9 @@ public class ZombieAStar : MonoBehaviour
     private float debugLogTimer = 0f;
     private float nextAttackTime = 0f;
 
+    private PlayerHealth playerHealth;
+    private ZombieSound zombieSound;
+
     private void Start()
     {
         agent = GetComponent<NavMeshAgent>();
@@ -47,6 +51,15 @@ public class ZombieAStar : MonoBehaviour
             Debug.LogError("[ZombieAStar] Player is not assigned.");
             enabled = false;
             return;
+        }
+
+        zombieSound = GetComponent<ZombieSound>();
+
+        // 🔥 CACHE PLAYER HEALTH HERE
+        playerHealth = player.GetComponent<PlayerHealth>();
+        if (playerHealth == null)
+        {
+            Debug.LogError("[ZombieAStar] PlayerHealth NOT found on player!");
         }
 
         if (PathfindingGrid.Instance == null)
@@ -88,7 +101,7 @@ public class ZombieAStar : MonoBehaviour
         if (debugLogTimer >= debugLogInterval)
         {
             debugLogTimer = 0f;
-            Debug.Log($"[ZombieAStar] Distance to player: {distanceToPlayer:F1}m | Waypoints: {currentPath?.Count ?? 0} | Current index: {waypointIndex}");
+            Debug.Log($"[ZombieAStar] Distance: {distanceToPlayer:F1}m");
         }
 
         FollowPath();
@@ -116,6 +129,19 @@ public class ZombieAStar : MonoBehaviour
             }
 
             Debug.Log("[ZombieAStar] Zombie attacks player!");
+            zombieSound?.PlayAttack();
+            
+            PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
+
+            if (playerHealth != null)
+            {
+                Debug.Log("🔥 DAMAGE APPLIED");
+                playerHealth.TakeDamage(damage);
+            }
+            else
+            {
+                Debug.Log("❌ PlayerHealth NOT FOUND on player!");
+            }
         }
     }
 
