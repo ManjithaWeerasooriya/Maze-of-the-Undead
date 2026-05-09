@@ -10,7 +10,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 3547707238052702253, guid: 6f8e61bcfda026941b9194b1e2dcb048, type: 3}
       propertyPath: m_Name
-      value: ZombieMale_AAB_URP Variant
+      value: zombie_with_animation
       objectReference: {fileID: 0}
     - target: {fileID: 4210914318428336791, guid: 6f8e61bcfda026941b9194b1e2dcb048, type: 3}
       propertyPath: m_LocalScale.x
@@ -26,15 +26,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4210914318428336791, guid: 6f8e61bcfda026941b9194b1e2dcb048, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -12.24
+      value: -9.532
       objectReference: {fileID: 0}
     - target: {fileID: 4210914318428336791, guid: 6f8e61bcfda026941b9194b1e2dcb048, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 4.274
+      value: 4.343
       objectReference: {fileID: 0}
     - target: {fileID: 4210914318428336791, guid: 6f8e61bcfda026941b9194b1e2dcb048, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -7.4423704
+      value: -11.119
       objectReference: {fileID: 0}
     - target: {fileID: 4210914318428336791, guid: 6f8e61bcfda026941b9194b1e2dcb048, type: 3}
       propertyPath: m_LocalRotation.w
@@ -96,6 +96,12 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 3547707238052702253, guid: 6f8e61bcfda026941b9194b1e2dcb048, type: 3}
       insertIndex: -1
       addedObject: {fileID: 2355593435447897047}
+    - targetCorrespondingSourceObject: {fileID: 3547707238052702253, guid: 6f8e61bcfda026941b9194b1e2dcb048, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 4599325640289248334}
+    - targetCorrespondingSourceObject: {fileID: 3547707238052702253, guid: 6f8e61bcfda026941b9194b1e2dcb048, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1041868096112984419}
     - targetCorrespondingSourceObject: {fileID: 758375827133304550, guid: 6f8e61bcfda026941b9194b1e2dcb048, type: 3}
       insertIndex: -1
       addedObject: {fileID: 7563979924528461893}
@@ -230,9 +236,133 @@ MonoBehaviour:
   waypointTolerance: 1.2
   attackRange: 1
   attackCooldown: 1.5
+  damage: 10
   rotationSpeed: 8
   animator: {fileID: 0}
   walkBoolName: isWalking
   attackTriggerName: Attack
   showDebugPath: 1
   debugLogInterval: 1
+--- !u!82 &4599325640289248334
+AudioSource:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7883894657082516213}
+  m_Enabled: 1
+  serializedVersion: 4
+  OutputAudioMixerGroup: {fileID: 0}
+  m_audioClip: {fileID: 0}
+  m_Resource: {fileID: 0}
+  m_PlayOnAwake: 1
+  m_Volume: 1
+  m_Pitch: 1
+  Loop: 0
+  Mute: 0
+  Spatialize: 0
+  SpatializePostEffects: 0
+  Priority: 128
+  DopplerLevel: 1
+  MinDistance: 1
+  MaxDistance: 500
+  Pan2D: 0
+  rolloffMode: 0
+  BypassEffects: 0
+  BypassListenerEffects: 0
+  BypassReverbZones: 0
+  rolloffCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    - serializedVersion: 3
+      time: 1
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  panLevelCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  spreadCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  reverbZoneMixCustomCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0.33333334
+      outWeight: 0.33333334
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+--- !u!114 &1041868096112984419
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7883894657082516213}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 39be13e119f4be7419b4ff8ed9c618ba, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ZombieSound
+  idleClips:
+  - {fileID: 8300000, guid: ba046b91b00c4864e9e169bcf8ac0df8, type: 3}
+  - {fileID: 8300000, guid: e9abd4263a112bd46971328bcc65bd30, type: 3}
+  - {fileID: 8300000, guid: 8881f8161424a744299ee5809e96ec6a, type: 3}
+  - {fileID: 8300000, guid: 31e508170d4f29646ae890a4424d4d3a, type: 3}
+  - {fileID: 8300000, guid: 36403bc5536c1454d8ac5866a171bb3c, type: 3}
+  idleResourceNames: []
+  minIdleInterval: 3
+  maxIdleInterval: 6
+  attackClips: []
+  attackResourceNames: []
+  baseVolume: 1
+  minDistance: 2
+  maxDistance: 20

@@ -6,16 +6,12 @@ public class PlayerHealth : MonoBehaviour
     public float maxHealth = 100f;
     private float currentHealth;
 
-    public Image healthBarFill; // drag from UI
-
-    public GameObject gameOverPanel; // your GameOver UI
+    public Image healthBarFill; // drag HealthBar_Fill here
 
     void Start()
     {
         currentHealth = maxHealth;
         UpdateHealthBar();
-
-        gameOverPanel.SetActive(false);
     }
 
     public void TakeDamage(float damage)
@@ -33,16 +29,12 @@ public class PlayerHealth : MonoBehaviour
 
     void UpdateHealthBar()
     {
-        healthBarFill.fillAmount = currentHealth / maxHealth;
+        if (healthBarFill != null)
+            healthBarFill.fillAmount = currentHealth / maxHealth;
     }
 
     void Die()
     {
-        gameOverPanel.SetActive(true);
-
-        Time.timeScale = 0f;
-
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
+        GameManager.Instance?.LoseLevel();
     }
 }

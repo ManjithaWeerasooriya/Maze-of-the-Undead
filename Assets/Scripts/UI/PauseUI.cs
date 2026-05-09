@@ -14,8 +14,10 @@ public class PauseUI : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Escape))
         {
-            if (gameOverPanel != null && gameOverPanel.activeSelf)
+            if (GameManager.Instance != null && GameManager.Instance.State != GameManager.GameState.Playing)
+            {
                 return;
+            }
             if (isPaused) Resume();
             else Pause();
         }

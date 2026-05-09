@@ -34,7 +34,8 @@ public class ZombieAStar : MonoBehaviour
     private float debugLogTimer = 0f;
     private float nextAttackTime = 0f;
 
-    private PlayerHealth playerHealth; // 🔥 ADDED
+    private PlayerHealth playerHealth;
+    private ZombieSound zombieSound;
 
     private void Start()
     {
@@ -51,6 +52,8 @@ public class ZombieAStar : MonoBehaviour
             enabled = false;
             return;
         }
+
+        zombieSound = GetComponent<ZombieSound>();
 
         // 🔥 CACHE PLAYER HEALTH HERE
         playerHealth = player.GetComponent<PlayerHealth>();
@@ -126,12 +129,18 @@ public class ZombieAStar : MonoBehaviour
             }
 
             Debug.Log("[ZombieAStar] Zombie attacks player!");
-
+            zombieSound?.PlayAttack();
             
+            PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
+
             if (playerHealth != null)
             {
                 Debug.Log("🔥 DAMAGE APPLIED");
                 playerHealth.TakeDamage(damage);
+            }
+            else
+            {
+                Debug.Log("❌ PlayerHealth NOT FOUND on player!");
             }
         }
     }
