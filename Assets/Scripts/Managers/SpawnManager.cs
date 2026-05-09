@@ -1,4 +1,5 @@
 using UnityEngine;
+using System;
 
 public class SpawnManager : MonoBehaviour
 {
@@ -14,6 +15,10 @@ public class SpawnManager : MonoBehaviour
     [SerializeField] public int zombiesPerWave = 3;
     [SerializeField] public int zombiesPerWaveIncrement = 2;
 
+    public event System.Action<int> OnWaveStarted;
+    public event System.Action<int> OnWaveCompleted;
+    public event System.Action<int> OnZombieCountChanged;
+
     private int zombieCount = 0;
     private int _zombiesRemainingInWave = 0;
     private GameObject playerInstance;
@@ -28,6 +33,7 @@ public class SpawnManager : MonoBehaviour
     {
         _zombiesRemainingInWave = zombiesPerWave + (currentWave - 1) * zombiesPerWaveIncrement;
         Debug.Log("Wave " + currentWave + " started. Zombies to spawn: " + _zombiesRemainingInWave);
+        OnWaveStarted?.Invoke(currentWave);
         InvokeRepeating(nameof(SpawnZombie), zombieSpawnInterval, zombieSpawnInterval);
     }
 
@@ -105,16 +111,19 @@ public class SpawnManager : MonoBehaviour
         Instantiate(zombiePrefab, spawnPoint.position, spawnPoint.rotation);
         zombieCount++;
         _zombiesRemainingInWave--;
+        OnZombieCountChanged?.Invoke(zombieCount);
     }
 
     public void OnZombieDied()
     {
         zombieCount--;
+        OnZombieCountChanged?.Invoke(zombieCount);
 
         // Check if all zombies from current wave are dead
         if (zombieCount == 0 && _zombiesRemainingInWave <= 0)
         {
             Debug.Log("Wave " + currentWave + " complete!");
+            OnWaveCompleted?.Invoke(currentWave);
             CancelInvoke(nameof(SpawnZombie));
             currentWave++;
             StartWave();
