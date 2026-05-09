@@ -1,4 +1,5 @@
 using UnityEditor;
+using UnityEditor.SceneManagement;
 using UnityEngine;
 
 public class SpawnSceneSetup
@@ -9,7 +10,7 @@ public class SpawnSceneSetup
         // Create SpawnManager GameObject
         GameObject spawnManagerObj = new GameObject("SpawnManager");
         spawnManagerObj.transform.position = Vector3.zero;
-        spawnManagerObj.AddComponent<SpawnManager>();
+        SpawnManager spawnManager = spawnManagerObj.AddComponent<SpawnManager>();
 
         // Create PlayerSpawn points
         Vector3[] playerSpawnPositions = new Vector3[]
@@ -53,6 +54,28 @@ public class SpawnSceneSetup
         SpawnManager spawnManager = spawnManagerObj.GetComponent<SpawnManager>();
         spawnManager.playerSpawnPoints = playerSpawns;
         spawnManager.zombieSpawnPoints = zombieSpawns;
+
+        // Load and assign prefabs
+        GameObject playerPrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Player/Player-v1.prefab");
+        GameObject zombiePrefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Prefabs/Zombie/ZombieMale_AAB_URP.prefab");
+
+        if (playerPrefab != null)
+            spawnManager.playerPrefab = playerPrefab;
+        else
+            Debug.LogWarning("Player prefab not found at Assets/Prefabs/Player/Player-v1.prefab");
+
+        if (zombiePrefab != null)
+            spawnManager.zombiePrefab = zombiePrefab;
+        else
+            Debug.LogWarning("Zombie prefab not found at Assets/Prefabs/Zombie/ZombieMale_AAB_URP.prefab");
+
+        // Set spawn configuration
+        spawnManager.zombieSpawnInterval = 3f;
+        spawnManager.maxZombies = 20;
+
+        // Mark scene as dirty and save
+        EditorSceneManager.MarkSceneDirty(spawnManagerObj.scene);
+        EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo();
 
         Debug.Log("Spawn scene setup complete!");
     }
