@@ -35,13 +35,17 @@ public class GameManager : MonoBehaviour
         Instance = this;
         if (persistAcrossScenes) DontDestroyOnLoad(gameObject);
 
-        if (winScreen != null) winScreen.SetActive(false);
+        if (winScreen == null)
+            Debug.LogWarning("[GameManager] winScreen is not assigned in the Inspector — the win UI will never display.", this);
+        else
+            winScreen.SetActive(false);
     }
 
     private void OnEnable()
     {
         ExitTrigger.ExitReached += HandleExitReached;
         SceneManager.sceneLoaded += HandleSceneLoaded;
+        Debug.Log("[GameManager] Subscribed to ExitTrigger.ExitReached.", this);
     }
 
     private void OnDisable()
@@ -52,6 +56,7 @@ public class GameManager : MonoBehaviour
 
     private void HandleExitReached(ExitTrigger trigger)
     {
+        Debug.Log($"[GameManager] HandleExitReached from '{(trigger != null ? trigger.name : "null")}' (current state: {State}).", this);
         if (State != GameState.Playing) return;
         WinLevel();
     }
@@ -66,9 +71,30 @@ public class GameManager : MonoBehaviour
 
     public void WinLevel()
     {
+        Debug.Log("[GameManager] WinLevel() invoked.", this);
         SetState(GameState.Won);
 
-        if (winScreen != null) winScreen.SetActive(true);
+        if (winScreen != null)
+        {
+            winScreen.SetActive(true);
+
+            // SetActive(true) on the panel doesn't help if a parent Canvas/GameObject is disabled.
+            if (!winScreen.activeInHierarchy)
+            {
+                Debug.LogError(
+                    $"[GameManager] '{winScreen.name}' was activated but is not active in hierarchy — " +
+                    "an ancestor (likely its Canvas) is disabled. Enable the parent chain.", winScreen);
+            }
+
+            // Animator + Time.timeScale = 0 silently breaks entry animations on Normal update mode.
+            var anim = winScreen.GetComponentInChildren<Animator>(true);
+            if (pauseOnWin && anim != null && anim.updateMode == AnimatorUpdateMode.Normal)
+            {
+                Debug.LogWarning(
+                    $"[GameManager] Animator on '{anim.name}' uses Normal update mode but pauseOnWin freezes time. " +
+                    "Set its Update Mode to 'Unscaled Time' or disable pauseOnWin so the win animation can play.", anim);
+            }
+        }
 
         if (unlockCursorOnWin)
         {

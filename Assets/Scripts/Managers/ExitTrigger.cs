@@ -55,12 +55,20 @@ public class ExitTrigger : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
-        if (!IsPlayer(other)) return;
+        Debug.Log($"[ExitTrigger] OnTriggerEnter from '{other.name}' (tag='{other.tag}', layer={LayerMask.LayerToName(other.gameObject.layer)}).", this);
+
+        if (!IsPlayer(other))
+        {
+            Debug.Log($"[ExitTrigger] '{other.name}' rejected — not the player (mode={detectionMode}).", this);
+            return;
+        }
         if (oneShot && _hasTriggered) return;
         if (_cooldownTimer > 0f) return;
 
         _hasTriggered = true;
         _cooldownTimer = retriggerCooldown;
+
+        Debug.Log($"[ExitTrigger] Player reached exit. Listeners on ExitReached: {(ExitReached == null ? 0 : ExitReached.GetInvocationList().Length)}.", this);
 
         OnPlayerExitReached?.Invoke();
         ExitReached?.Invoke(this);
