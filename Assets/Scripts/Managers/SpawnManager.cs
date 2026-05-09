@@ -51,7 +51,7 @@ public class SpawnManager : MonoBehaviour
             return;
         }
 
-        Transform spawnPoint = playerSpawnPoints[Random.Range(0, playerSpawnPoints.Length)];
+        Transform spawnPoint = playerSpawnPoints[UnityEngine.Random.Range(0, playerSpawnPoints.Length)];
         playerInstance = Instantiate(playerPrefab, spawnPoint.position, spawnPoint.rotation);
     }
 
@@ -82,7 +82,7 @@ public class SpawnManager : MonoBehaviour
 
         while (attempts < maxAttempts)
         {
-            spawnPoint = zombieSpawnPoints[Random.Range(0, zombieSpawnPoints.Length)];
+            spawnPoint = zombieSpawnPoints[UnityEngine.Random.Range(0, zombieSpawnPoints.Length)];
             
             if (playerInstance != null)
             {

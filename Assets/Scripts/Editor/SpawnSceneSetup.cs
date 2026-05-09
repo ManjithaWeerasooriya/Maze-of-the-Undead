@@ -51,7 +51,7 @@ public class SpawnSceneSetup
         }
 
         // Assign spawn points to SpawnManager
-        SpawnManager spawnManager = spawnManagerObj.GetComponent<SpawnManager>();
+        spawnManager = spawnManagerObj.GetComponent<SpawnManager>();
         spawnManager.playerSpawnPoints = playerSpawns;
         spawnManager.zombieSpawnPoints = zombieSpawns;
 
