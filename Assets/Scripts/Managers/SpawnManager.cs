@@ -139,4 +139,9 @@ public class SpawnManager : MonoBehaviour
     {
         InvokeRepeating(nameof(SpawnZombie), zombieSpawnInterval, zombieSpawnInterval);
     }
+
+    public int GetZombieCount()
+    {
+        return zombieCount;
+    }
 }
