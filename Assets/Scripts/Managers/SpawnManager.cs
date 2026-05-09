@@ -12,6 +12,7 @@ public class SpawnManager : MonoBehaviour
     [SerializeField] public int maxZombies = 20;
 
     private int zombieCount = 0;
+    private GameObject playerInstance;
 
     private void Start()
     {
@@ -34,7 +35,7 @@ public class SpawnManager : MonoBehaviour
         }
 
         Transform spawnPoint = playerSpawnPoints[Random.Range(0, playerSpawnPoints.Length)];
-        Instantiate(playerPrefab, spawnPoint.position, spawnPoint.rotation);
+        playerInstance = Instantiate(playerPrefab, spawnPoint.position, spawnPoint.rotation);
     }
 
     private void SpawnZombie()
@@ -54,7 +55,39 @@ public class SpawnManager : MonoBehaviour
             return;
         }
 
-        Transform spawnPoint = zombieSpawnPoints[Random.Range(0, zombieSpawnPoints.Length)];
+        Transform spawnPoint = null;
+        int attempts = 0;
+        const int maxAttempts = 10;
+        const float minDistanceFromPlayer = 5f;
+
+        while (attempts < maxAttempts)
+        {
+            spawnPoint = zombieSpawnPoints[Random.Range(0, zombieSpawnPoints.Length)];
+            
+            if (playerInstance != null)
+            {
+                float distanceToPlayer = Vector3.Distance(spawnPoint.position, playerInstance.transform.position);
+                if (distanceToPlayer >= minDistanceFromPlayer)
+                {
+                    break;
+                }
+            }
+            else
+            {
+                break;
+            }
+
+            attempts++;
+        }
+
+        if (spawnPoint == null || (playerInstance != null && 
+            Vector3.Distance(spawnPoint.position, playerInstance.transform.position) < minDistanceFromPlayer && 
+            attempts >= maxAttempts))
+        {
+            Debug.LogWarning("Could not find safe spawn point for zombie after " + maxAttempts + " attempts. Skipping spawn.");
+            return;
+        }
+
         Instantiate(zombiePrefab, spawnPoint.position, spawnPoint.rotation);
         zombieCount++;
     }
