@@ -13,6 +13,10 @@ public class PathfindingGrid : MonoBehaviour
     public float nodeRadius = 0.5f;
     public float navMeshSampleRadius = 5f;
 
+    [Header("Waypoint Height Offset")]
+    [SerializeField] private float waypointYOffset = 0.35f;
+
+
     [Header("Wall Detection (no layer setup needed)")]
     [Tooltip("Nodes within this distance of a NavMesh edge are marked blocked. " +
              "Increase if zombie still clips walls. 0.5-1.5 is usually good.")]
@@ -74,7 +78,7 @@ public class PathfindingGrid : MonoBehaviour
 
                 if (isWalkable) walkableCount++;
 
-                Vector3 finalPos = onNavMesh ? hit.position : worldPoint;
+                Vector3 finalPos = onNavMesh ? hit.position + Vector3.up * waypointYOffset : worldPoint;
                 grid[x, z] = new PathNode(x, z, isWalkable, finalPos);
             }
         }
@@ -156,6 +160,7 @@ public class PathfindingGrid : MonoBehaviour
 
                 if (neighbour == null || !neighbour.walkable)
                     continue;
+                
 
                 // Block diagonals that cut through wall corners
                 if (dx != 0 && dz != 0)
@@ -314,4 +319,5 @@ public class PathfindingGrid : MonoBehaviour
 
         return nodes;
     }
+
 }

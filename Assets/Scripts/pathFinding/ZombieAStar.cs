@@ -36,6 +36,7 @@ public class ZombieAStar : MonoBehaviour
 
     private PlayerHealth playerHealth;
     private ZombieSound zombieSound;
+    private bool hasValidPath = false;
 
     private void Start()
     {
@@ -74,19 +75,27 @@ public class ZombieAStar : MonoBehaviour
 
     private void Update()
     {
+        if (player == null)
+        {
+            return;
+        }
+
+        if (agent == null)
+        {
+            agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
+
+            if (agent == null)
+            {
+                return;
+            }
+        }
+
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
 
         if (distanceToPlayer <= attackRange)
         {
             AttackPlayer();
             return;
-        }
-
-        agent.isStopped = false;
-
-        if (animator != null)
-        {
-            animator.SetBool(walkBoolName, agent.velocity.magnitude > 0.1f);
         }
 
         pathTimer += Time.deltaTime;
@@ -104,9 +113,33 @@ public class ZombieAStar : MonoBehaviour
             Debug.Log($"[ZombieAStar] Distance: {distanceToPlayer:F1}m");
         }
 
+        if (!hasValidPath)
+        {
+            agent.ResetPath();
+            agent.isStopped = true;
+
+            if (animator != null)
+            {
+                animator.SetBool(walkBoolName, false);
+            }
+
+            return;
+        }
+
+        agent.isStopped = false;
+
+        if (animator != null)
+        {
+            animator.SetBool(walkBoolName, agent.velocity.magnitude > 0.1f);
+        }
+
         FollowPath();
     }
 
+    private void Awake()
+    {
+        agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
+    }
     private void AttackPlayer()
     {
         agent.isStopped = true;
@@ -164,22 +197,58 @@ public class ZombieAStar : MonoBehaviour
 
     private void CalculatePath()
     {
-        if (player == null) return;
+        if (player == null)
+        {
+            Debug.LogWarning("[ZombieAStar] Cannot calculate path because player is missing.");
+            hasValidPath = false;
+            return;
+        }
+
+        if (agent == null)
+        {
+            agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
+
+            if (agent == null)
+            {
+                Debug.LogWarning("[ZombieAStar] Cannot calculate path because NavMeshAgent is missing.");
+                hasValidPath = false;
+                return;
+            }
+        }
 
         List<Vector3> newPath = AStarPathfinder.FindPath(transform.position, player.position);
 
         if (newPath == null || newPath.Count == 0)
         {
-            agent.SetDestination(player.position);
+            Debug.Log("[ZombieAStar] No valid A* path found. Zombie path stopped.");
+            currentPath = null;
+            waypointIndex = 0;
+            hasValidPath = false;
+
+            agent.ResetPath();
+            agent.isStopped = true;
+
+            if (animator != null)
+            {
+                animator.SetBool(walkBoolName, false);
+            }
+
             return;
         }
 
         currentPath = newPath;
         waypointIndex = 0;
+        hasValidPath = true;
+
+        agent.isStopped = false;
     }
 
     private void FollowPath()
     {
+        if (!hasValidPath || currentPath == null || currentPath.Count == 0)
+        {
+            return;
+        }
         if (currentPath == null || currentPath.Count == 0)
             return;
 
@@ -211,10 +280,10 @@ public class ZombieAStar : MonoBehaviour
         PathManager.OnPathChanged += HandlePathChanged;
     }
     private void HandlePathChanged()
-{
-    Debug.Log("[ZombieAStar] Path recalculated after graph change.");
-    CalculatePath();
-}
+    {
+        Debug.Log("[ZombieAStar] Path recalculated after graph change.");
+        CalculatePath();
+    }
 
     private void OnDisable()
     {
