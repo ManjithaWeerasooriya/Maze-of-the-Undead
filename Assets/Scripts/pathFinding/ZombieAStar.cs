@@ -208,8 +208,13 @@ public class ZombieAStar : MonoBehaviour
 
     private void OnEnable()
     {
-        PathManager.OnPathChanged += CalculatePath;
+        PathManager.OnPathChanged += HandlePathChanged;
     }
+    private void HandlePathChanged()
+{
+    Debug.Log("[ZombieAStar] Path recalculated after graph change.");
+    CalculatePath();
+}
 
     private void OnDisable()
     {
