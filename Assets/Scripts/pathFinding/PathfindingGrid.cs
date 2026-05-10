@@ -5,6 +5,9 @@ using UnityEngine.AI;
 public class PathfindingGrid : MonoBehaviour
 {
     public static PathfindingGrid Instance;
+    [SerializeField] private float dynamicBlockPadding = 0.5f;
+
+    private Dictionary<GameObject, List<PathNode>> dynamicBlocksByOwner = new Dictionary<GameObject, List<PathNode>>();
 
     public Vector2 gridWorldSize = new Vector2(300f, 300f);
     public float nodeRadius = 0.5f;
@@ -149,6 +152,11 @@ public class PathfindingGrid : MonoBehaviour
                 if (checkX < 0 || checkX >= gridSizeX || checkZ < 0 || checkZ >= gridSizeZ)
                     continue;
 
+                PathNode neighbour = grid[checkX, checkZ];
+
+                if (neighbour == null || !neighbour.walkable)
+                    continue;
+
                 // Block diagonals that cut through wall corners
                 if (dx != 0 && dz != 0)
                 {
@@ -159,7 +167,7 @@ public class PathfindingGrid : MonoBehaviour
                         continue;
                 }
 
-                neighbours.Add(grid[checkX, checkZ]);
+                neighbours.Add(neighbour);
             }
         }
 
@@ -177,19 +185,133 @@ public class PathfindingGrid : MonoBehaviour
         Gizmos.color = Color.cyan;
         Gizmos.DrawWireCube(transform.position, new Vector3(gridWorldSize.x, 1f, gridWorldSize.y));
 
-        if (grid == null) return;
+        if (grid == null)
+        {
+            return;
+        }
 
         int step = Mathf.Max(1, gridSizeX / 40);
+
         for (int x = 0; x < gridSizeX; x += step)
         {
             for (int z = 0; z < gridSizeZ; z += step)
             {
                 PathNode node = grid[x, z];
-                Gizmos.color = node.walkable
-                    ? new Color(0, 1, 0, 0.2f)
-                    : new Color(1, 0, 0, 0.15f);
-                Gizmos.DrawCube(node.worldPosition, Vector3.one * (nodeDiameter * step * 0.8f));
+
+                if (node == null)
+                {
+                    continue;
+                }
+
+                if (node.dynamicallyBlocked)
+                {
+                    Gizmos.color = Color.yellow;
+                }
+                else if (node.walkable)
+                {
+                    Gizmos.color = new Color(0, 1, 0, 0.2f);
+                }
+                else
+                {
+                    Gizmos.color = new Color(1, 0, 0, 0.15f);
+                }
+
+                Gizmos.DrawCube(
+                    node.worldPosition,
+                    Vector3.one * (nodeDiameter * step * 0.8f)
+                );
             }
         }
+    }
+    public int UpdateDynamicObstacle(GameObject owner, Bounds obstacleBounds)
+    {
+        if (owner == null)
+        {
+            Debug.LogWarning("[PathfindingGrid] Cannot update dynamic obstacle because owner is null.");
+            return 0;
+        }
+
+        ClearDynamicBlocksForOwner(owner);
+
+        List<PathNode> affectedNodes = GetNodesInBounds(obstacleBounds);
+
+        foreach (PathNode node in affectedNodes)
+        {
+            if (node != null && node.baseWalkable)
+            {
+                node.dynamicallyBlocked = true;
+            }
+        }
+
+        dynamicBlocksByOwner[owner] = affectedNodes;
+
+        Debug.Log($"[PathfindingGrid] Blocked {affectedNodes.Count} dynamic nodes for {owner.name}.");
+
+        return affectedNodes.Count;
+    }
+    public int ClearDynamicBlocksForOwner(GameObject owner)
+    {
+        if (owner == null)
+        {
+            return 0;
+        }
+
+        if (!dynamicBlocksByOwner.ContainsKey(owner))
+        {
+            return 0;
+        }
+
+        List<PathNode> oldNodes = dynamicBlocksByOwner[owner];
+
+        foreach (PathNode node in oldNodes)
+        {
+            if (node != null)
+            {
+                node.dynamicallyBlocked = false;
+            }
+        }
+
+        dynamicBlocksByOwner.Remove(owner);
+
+        Debug.Log($"[PathfindingGrid] Cleared {oldNodes.Count} old dynamic nodes for {owner.name}.");
+
+        return oldNodes.Count;
+    }
+    public List<PathNode> GetNodesInBounds(Bounds bounds)
+    {
+        List<PathNode> nodes = new List<PathNode>();
+
+        if (grid == null)
+        {
+            Debug.LogWarning("[PathfindingGrid] Grid is null. Cannot detect nodes in bounds.");
+            return nodes;
+        }
+
+        bounds.Expand(dynamicBlockPadding);
+
+        for (int x = 0; x < grid.GetLength(0); x++)
+        {
+            for (int z = 0; z < grid.GetLength(1); z++)
+            {
+                PathNode node = grid[x, z];
+
+                if (node == null)
+                {
+                    continue;
+                }
+
+                Vector3 nodePosition = node.worldPosition;
+
+                bool insideX = nodePosition.x >= bounds.min.x && nodePosition.x <= bounds.max.x;
+                bool insideZ = nodePosition.z >= bounds.min.z && nodePosition.z <= bounds.max.z;
+
+                if (insideX && insideZ)
+                {
+                    nodes.Add(node);
+                }
+            }
+        }
+
+        return nodes;
     }
 }

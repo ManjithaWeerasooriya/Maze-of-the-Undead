@@ -4,12 +4,19 @@ public class PathNode
 {
     public int gridX;
     public int gridZ;
-    public bool walkable;
+    public bool baseWalkable;
+    public bool dynamicallyBlocked;
+
     public Vector3 worldPosition;
 
     public int gCost;
     public int hCost;
     public PathNode parent;
+
+     public bool walkable
+    {
+        get { return baseWalkable && !dynamicallyBlocked; }
+    }
 
     public int fCost => gCost + hCost;
 
@@ -17,7 +24,8 @@ public class PathNode
     {
         gridX = x;
         gridZ = z;
-        walkable = isWalkable;
+        baseWalkable = isWalkable;
+        dynamicallyBlocked = false;
         worldPosition = position;
     }
 

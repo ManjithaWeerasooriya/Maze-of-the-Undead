@@ -28,8 +28,7 @@ public static class AStarPathfinder
 
         grid.ResetAllNodes();
 
-        startNode.walkable = true;
-        targetNode.walkable = true;
+        
 
         List<PathNode> openList = new List<PathNode>();
         HashSet<PathNode> closedList = new HashSet<PathNode>();
@@ -59,8 +58,10 @@ public static class AStarPathfinder
 
             foreach (PathNode neighbour in grid.GetNeighbours(currentNode))
             {
-                if (!neighbour.walkable || closedList.Contains(neighbour))
+                if ((!neighbour.walkable && neighbour != targetNode) || closedList.Contains(neighbour))
+                {
                     continue;
+                }
 
                 int newCost = currentNode.gCost + GetDistance(currentNode, neighbour);
 
