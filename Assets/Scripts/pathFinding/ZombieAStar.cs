@@ -15,13 +15,17 @@ public class ZombieAStar : MonoBehaviour
     [Header("Attack Settings")]
     public float attackRange = 2.0f;
     public float attackCooldown = 1.5f;
-    public float damage = 10f; // 🔥 ADDED
+    public float damage = 10f;
     public float rotationSpeed = 8f;
 
     [Header("Animation")]
     public Animator animator;
     public string walkBoolName = "isWalking";
     public string attackTriggerName = "Attack";
+
+    [Header("Multi-Floor Navigation")]
+    [SerializeField] private bool useDirectNavMeshBetweenFloors = true;
+    [SerializeField] private float floorHeightDifference = 2.0f;
 
     [Header("Debug")]
     public bool showDebugPath = true;
@@ -30,18 +34,23 @@ public class ZombieAStar : MonoBehaviour
     private NavMeshAgent agent;
     private List<Vector3> currentPath = new List<Vector3>();
     private int waypointIndex = 0;
+
     private float pathTimer = 0f;
     private float debugLogTimer = 0f;
     private float nextAttackTime = 0f;
 
     private PlayerHealth playerHealth;
     private ZombieSound zombieSound;
+
     private bool hasValidPath = false;
+
+    private void Awake()
+    {
+        agent = GetComponent<NavMeshAgent>();
+    }
 
     private void Start()
     {
-        agent = GetComponent<NavMeshAgent>();
-
         if (animator == null)
         {
             animator = GetComponentInChildren<Animator>();
@@ -56,11 +65,10 @@ public class ZombieAStar : MonoBehaviour
 
         zombieSound = GetComponent<ZombieSound>();
 
-        // 🔥 CACHE PLAYER HEALTH HERE
         playerHealth = player.GetComponent<PlayerHealth>();
         if (playerHealth == null)
         {
-            Debug.LogError("[ZombieAStar] PlayerHealth NOT found on player!");
+            Debug.LogError("[ZombieAStar] PlayerHealth not found on player.");
         }
 
         if (PathfindingGrid.Instance == null)
@@ -73,6 +81,16 @@ public class ZombieAStar : MonoBehaviour
         CalculatePath();
     }
 
+    private void OnEnable()
+    {
+        PathManager.OnPathChanged += HandlePathChanged;
+    }
+
+    private void OnDisable()
+    {
+        PathManager.OnPathChanged -= HandlePathChanged;
+    }
+
     private void Update()
     {
         if (player == null)
@@ -82,7 +100,7 @@ public class ZombieAStar : MonoBehaviour
 
         if (agent == null)
         {
-            agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
+            agent = GetComponent<NavMeshAgent>();
 
             if (agent == null)
             {
@@ -95,6 +113,22 @@ public class ZombieAStar : MonoBehaviour
         if (distanceToPlayer <= attackRange)
         {
             AttackPlayer();
+            return;
+        }
+
+        float verticalDifference = Mathf.Abs(player.position.y - transform.position.y);
+
+        if (useDirectNavMeshBetweenFloors && verticalDifference > floorHeightDifference)
+        {
+            currentPath = null;
+            waypointIndex = 0;
+            hasValidPath = false;
+
+            agent.isStopped = false;
+            agent.SetDestination(player.position);
+
+            SetWalkingAnimation(agent.velocity.magnitude > 0.1f);
+
             return;
         }
 
@@ -117,82 +151,14 @@ public class ZombieAStar : MonoBehaviour
         {
             agent.ResetPath();
             agent.isStopped = true;
-
-            if (animator != null)
-            {
-                animator.SetBool(walkBoolName, false);
-            }
-
+            SetWalkingAnimation(false);
             return;
         }
 
         agent.isStopped = false;
-
-        if (animator != null)
-        {
-            animator.SetBool(walkBoolName, agent.velocity.magnitude > 0.1f);
-        }
+        SetWalkingAnimation(agent.velocity.magnitude > 0.1f);
 
         FollowPath();
-    }
-
-    private void Awake()
-    {
-        agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
-    }
-    private void AttackPlayer()
-    {
-        agent.isStopped = true;
-        agent.ResetPath();
-
-        if (animator != null)
-        {
-            animator.SetBool(walkBoolName, false);
-        }
-
-        FacePlayer();
-
-        if (Time.time >= nextAttackTime)
-        {
-            nextAttackTime = Time.time + attackCooldown;
-
-            if (animator != null)
-            {
-                animator.SetTrigger(attackTriggerName);
-            }
-
-            Debug.Log("[ZombieAStar] Zombie attacks player!");
-            zombieSound?.PlayAttack();
-            
-            PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
-
-            if (playerHealth != null)
-            {
-                Debug.Log("🔥 DAMAGE APPLIED");
-                playerHealth.TakeDamage(damage);
-            }
-            else
-            {
-                Debug.Log("❌ PlayerHealth NOT FOUND on player!");
-            }
-        }
-    }
-
-    private void FacePlayer()
-    {
-        Vector3 direction = player.position - transform.position;
-        direction.y = 0f;
-
-        if (direction.sqrMagnitude <= 0.01f)
-            return;
-
-        Quaternion targetRotation = Quaternion.LookRotation(direction);
-
-        transform.rotation = Quaternion.Slerp(
-            transform.rotation,
-            targetRotation,
-            rotationSpeed * Time.deltaTime
-        );
     }
 
     private void CalculatePath()
@@ -206,7 +172,7 @@ public class ZombieAStar : MonoBehaviour
 
         if (agent == null)
         {
-            agent = GetComponent<UnityEngine.AI.NavMeshAgent>();
+            agent = GetComponent<NavMeshAgent>();
 
             if (agent == null)
             {
@@ -221,6 +187,7 @@ public class ZombieAStar : MonoBehaviour
         if (newPath == null || newPath.Count == 0)
         {
             Debug.Log("[ZombieAStar] No valid A* path found. Zombie path stopped.");
+
             currentPath = null;
             waypointIndex = 0;
             hasValidPath = false;
@@ -228,10 +195,7 @@ public class ZombieAStar : MonoBehaviour
             agent.ResetPath();
             agent.isStopped = true;
 
-            if (animator != null)
-            {
-                animator.SetBool(walkBoolName, false);
-            }
+            SetWalkingAnimation(false);
 
             return;
         }
@@ -249,17 +213,20 @@ public class ZombieAStar : MonoBehaviour
         {
             return;
         }
-        if (currentPath == null || currentPath.Count == 0)
-            return;
 
         if (waypointIndex >= currentPath.Count)
+        {
+            hasValidPath = false;
+            agent.ResetPath();
+            SetWalkingAnimation(false);
             return;
+        }
 
         Vector3 targetWaypoint = currentPath[waypointIndex];
 
         float distToWaypoint = Vector3.Distance(
-            new Vector3(transform.position.x, 0, transform.position.z),
-            new Vector3(targetWaypoint.x, 0, targetWaypoint.z)
+            new Vector3(transform.position.x, 0f, transform.position.z),
+            new Vector3(targetWaypoint.x, 0f, targetWaypoint.z)
         );
 
         if (distToWaypoint <= waypointTolerance)
@@ -267,7 +234,12 @@ public class ZombieAStar : MonoBehaviour
             waypointIndex++;
 
             if (waypointIndex >= currentPath.Count)
+            {
+                hasValidPath = false;
+                agent.ResetPath();
+                SetWalkingAnimation(false);
                 return;
+            }
 
             targetWaypoint = currentPath[waypointIndex];
         }
@@ -275,25 +247,103 @@ public class ZombieAStar : MonoBehaviour
         agent.SetDestination(targetWaypoint);
     }
 
-    private void OnEnable()
-    {
-        PathManager.OnPathChanged += HandlePathChanged;
-    }
     private void HandlePathChanged()
     {
         Debug.Log("[ZombieAStar] Path recalculated after graph change.");
         CalculatePath();
     }
 
-    private void OnDisable()
+    private void AttackPlayer()
     {
-        PathManager.OnPathChanged -= CalculatePath;
+        if (agent != null)
+        {
+            agent.isStopped = true;
+            agent.ResetPath();
+        }
+
+        SetWalkingAnimation(false);
+
+        FacePlayer();
+
+        if (Time.time >= nextAttackTime)
+        {
+            nextAttackTime = Time.time + attackCooldown;
+
+            if (animator != null && HasAnimatorParameter(attackTriggerName))
+            {
+                animator.SetTrigger(attackTriggerName);
+            }
+
+            Debug.Log("[ZombieAStar] Zombie attacks player.");
+            zombieSound?.PlayAttack();
+
+            if (playerHealth != null)
+            {
+                playerHealth.TakeDamage(damage);
+            }
+            else
+            {
+                Debug.LogWarning("[ZombieAStar] PlayerHealth not found on player.");
+            }
+        }
+    }
+
+    private void FacePlayer()
+    {
+        if (player == null)
+        {
+            return;
+        }
+
+        Vector3 direction = player.position - transform.position;
+        direction.y = 0f;
+
+        if (direction.sqrMagnitude <= 0.01f)
+        {
+            return;
+        }
+
+        Quaternion targetRotation = Quaternion.LookRotation(direction);
+
+        transform.rotation = Quaternion.Slerp(
+            transform.rotation,
+            targetRotation,
+            rotationSpeed * Time.deltaTime
+        );
+    }
+
+    private void SetWalkingAnimation(bool isWalking)
+    {
+        if (animator != null && HasAnimatorParameter(walkBoolName))
+        {
+            animator.SetBool(walkBoolName, isWalking);
+        }
+    }
+
+    private bool HasAnimatorParameter(string parameterName)
+    {
+        if (animator == null || string.IsNullOrEmpty(parameterName))
+        {
+            return false;
+        }
+
+        foreach (AnimatorControllerParameter parameter in animator.parameters)
+        {
+            if (parameter.name == parameterName)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private void OnDrawGizmos()
     {
         if (!showDebugPath || currentPath == null || currentPath.Count < 2)
+        {
             return;
+        }
 
         Gizmos.color = Color.red;
 
