@@ -15,13 +15,17 @@ public class ZombieAStar : MonoBehaviour
     [Header("Attack Settings")]
     public float attackRange = 2.0f;
     public float attackCooldown = 1.5f;
-    public float damage = 10f; // 🔥 ADDED
+    public float damage = 10f;
     public float rotationSpeed = 8f;
 
     [Header("Animation")]
     public Animator animator;
     public string walkBoolName = "isWalking";
     public string attackTriggerName = "Attack";
+
+    [Header("Multi-Floor Navigation")]
+    [SerializeField] private bool useDirectNavMeshBetweenFloors = true;
+    [SerializeField] private float floorHeightDifference = 2.0f;
 
     [Header("Debug")]
     public bool showDebugPath = true;
@@ -30,6 +34,7 @@ public class ZombieAStar : MonoBehaviour
     private NavMeshAgent agent;
     private List<Vector3> currentPath = new List<Vector3>();
     private int waypointIndex = 0;
+
     private float pathTimer = 0f;
     private float debugLogTimer = 0f;
     private float nextAttackTime = 0f;
@@ -37,10 +42,15 @@ public class ZombieAStar : MonoBehaviour
     private PlayerHealth playerHealth;
     private ZombieSound zombieSound;
 
-    private void Start()
+    private bool hasValidPath = false;
+
+    private void Awake()
     {
         agent = GetComponent<NavMeshAgent>();
+    }
 
+    private void Start()
+    {
         if (animator == null)
         {
             animator = GetComponentInChildren<Animator>();
@@ -55,11 +65,10 @@ public class ZombieAStar : MonoBehaviour
 
         zombieSound = GetComponent<ZombieSound>();
 
-        // 🔥 CACHE PLAYER HEALTH HERE
         playerHealth = player.GetComponent<PlayerHealth>();
         if (playerHealth == null)
         {
-            Debug.LogError("[ZombieAStar] PlayerHealth NOT found on player!");
+            Debug.LogError("[ZombieAStar] PlayerHealth not found on player.");
         }
 
         if (PathfindingGrid.Instance == null)
@@ -72,8 +81,33 @@ public class ZombieAStar : MonoBehaviour
         CalculatePath();
     }
 
+    private void OnEnable()
+    {
+        PathManager.OnPathChanged += HandlePathChanged;
+    }
+
+    private void OnDisable()
+    {
+        PathManager.OnPathChanged -= HandlePathChanged;
+    }
+
     private void Update()
     {
+        if (player == null)
+        {
+            return;
+        }
+
+        if (agent == null)
+        {
+            agent = GetComponent<NavMeshAgent>();
+
+            if (agent == null)
+            {
+                return;
+            }
+        }
+
         float distanceToPlayer = Vector3.Distance(transform.position, player.position);
 
         if (distanceToPlayer <= attackRange)
@@ -82,11 +116,20 @@ public class ZombieAStar : MonoBehaviour
             return;
         }
 
-        agent.isStopped = false;
+        float verticalDifference = Mathf.Abs(player.position.y - transform.position.y);
 
-        if (animator != null)
+        if (useDirectNavMeshBetweenFloors && verticalDifference > floorHeightDifference)
         {
-            animator.SetBool(walkBoolName, agent.velocity.magnitude > 0.1f);
+            currentPath = null;
+            waypointIndex = 0;
+            hasValidPath = false;
+
+            agent.isStopped = false;
+            agent.SetDestination(player.position);
+
+            SetWalkingAnimation(agent.velocity.magnitude > 0.1f);
+
+            return;
         }
 
         pathTimer += Time.deltaTime;
@@ -104,18 +147,121 @@ public class ZombieAStar : MonoBehaviour
             Debug.Log($"[ZombieAStar] Distance: {distanceToPlayer:F1}m");
         }
 
+        if (!hasValidPath)
+        {
+            agent.ResetPath();
+            agent.isStopped = true;
+            SetWalkingAnimation(false);
+            return;
+        }
+
+        agent.isStopped = false;
+        SetWalkingAnimation(agent.velocity.magnitude > 0.1f);
+
         FollowPath();
+    }
+
+    private void CalculatePath()
+    {
+        if (player == null)
+        {
+            Debug.LogWarning("[ZombieAStar] Cannot calculate path because player is missing.");
+            hasValidPath = false;
+            return;
+        }
+
+        if (agent == null)
+        {
+            agent = GetComponent<NavMeshAgent>();
+
+            if (agent == null)
+            {
+                Debug.LogWarning("[ZombieAStar] Cannot calculate path because NavMeshAgent is missing.");
+                hasValidPath = false;
+                return;
+            }
+        }
+
+        List<Vector3> newPath = AStarPathfinder.FindPath(transform.position, player.position);
+
+        if (newPath == null || newPath.Count == 0)
+        {
+            Debug.Log("[ZombieAStar] No valid A* path found. Zombie path stopped.");
+
+            currentPath = null;
+            waypointIndex = 0;
+            hasValidPath = false;
+
+            agent.ResetPath();
+            agent.isStopped = true;
+
+            SetWalkingAnimation(false);
+
+            return;
+        }
+
+        currentPath = newPath;
+        waypointIndex = 0;
+        hasValidPath = true;
+
+        agent.isStopped = false;
+    }
+
+    private void FollowPath()
+    {
+        if (!hasValidPath || currentPath == null || currentPath.Count == 0)
+        {
+            return;
+        }
+
+        if (waypointIndex >= currentPath.Count)
+        {
+            hasValidPath = false;
+            agent.ResetPath();
+            SetWalkingAnimation(false);
+            return;
+        }
+
+        Vector3 targetWaypoint = currentPath[waypointIndex];
+
+        float distToWaypoint = Vector3.Distance(
+            new Vector3(transform.position.x, 0f, transform.position.z),
+            new Vector3(targetWaypoint.x, 0f, targetWaypoint.z)
+        );
+
+        if (distToWaypoint <= waypointTolerance)
+        {
+            waypointIndex++;
+
+            if (waypointIndex >= currentPath.Count)
+            {
+                hasValidPath = false;
+                agent.ResetPath();
+                SetWalkingAnimation(false);
+                return;
+            }
+
+            targetWaypoint = currentPath[waypointIndex];
+        }
+
+        agent.SetDestination(targetWaypoint);
+    }
+
+    private void HandlePathChanged()
+    {
+        Debug.Log("[ZombieAStar] Path recalculated after graph change.");
+        CalculatePath();
     }
 
     private void AttackPlayer()
     {
-        agent.isStopped = true;
-        agent.ResetPath();
-
-        if (animator != null)
+        if (agent != null)
         {
-            animator.SetBool(walkBoolName, false);
+            agent.isStopped = true;
+            agent.ResetPath();
         }
+
+        SetWalkingAnimation(false);
 
         FacePlayer();
 
@@ -123,35 +269,39 @@ public class ZombieAStar : MonoBehaviour
         {
             nextAttackTime = Time.time + attackCooldown;
 
-            if (animator != null)
+            if (animator != null && HasAnimatorParameter(attackTriggerName))
             {
                 animator.SetTrigger(attackTriggerName);
             }
 
-            Debug.Log("[ZombieAStar] Zombie attacks player!");
+            Debug.Log("[ZombieAStar] Zombie attacks player.");
             zombieSound?.PlayAttack();
-            
-            PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
 
             if (playerHealth != null)
             {
-                Debug.Log("🔥 DAMAGE APPLIED");
                 playerHealth.TakeDamage(damage);
             }
             else
             {
-                Debug.Log("❌ PlayerHealth NOT FOUND on player!");
+                Debug.LogWarning("[ZombieAStar] PlayerHealth not found on player.");
             }
         }
     }
 
     private void FacePlayer()
     {
+        if (player == null)
+        {
+            return;
+        }
+
         Vector3 direction = player.position - transform.position;
         direction.y = 0f;
 
         if (direction.sqrMagnitude <= 0.01f)
+        {
             return;
+        }
 
         Quaternion targetRotation = Quaternion.LookRotation(direction);
 
@@ -162,64 +312,38 @@ public class ZombieAStar : MonoBehaviour
         );
     }
 
-    private void CalculatePath()
+    private void SetWalkingAnimation(bool isWalking)
     {
-        if (player == null) return;
-
-        List<Vector3> newPath = AStarPathfinder.FindPath(transform.position, player.position);
-
-        if (newPath == null || newPath.Count == 0)
+        if (animator != null && HasAnimatorParameter(walkBoolName))
         {
-            agent.SetDestination(player.position);
-            return;
+            animator.SetBool(walkBoolName, isWalking);
+        }
+    }
+
+    private bool HasAnimatorParameter(string parameterName)
+    {
+        if (animator == null || string.IsNullOrEmpty(parameterName))
+        {
+            return false;
         }
 
-        currentPath = newPath;
-        waypointIndex = 0;
-    }
-
-    private void FollowPath()
-    {
-        if (currentPath == null || currentPath.Count == 0)
-            return;
-
-        if (waypointIndex >= currentPath.Count)
-            return;
-
-        Vector3 targetWaypoint = currentPath[waypointIndex];
-
-        float distToWaypoint = Vector3.Distance(
-            new Vector3(transform.position.x, 0, transform.position.z),
-            new Vector3(targetWaypoint.x, 0, targetWaypoint.z)
-        );
-
-        if (distToWaypoint <= waypointTolerance)
+        foreach (AnimatorControllerParameter parameter in animator.parameters)
         {
-            waypointIndex++;
-
-            if (waypointIndex >= currentPath.Count)
-                return;
-
-            targetWaypoint = currentPath[waypointIndex];
+            if (parameter.name == parameterName)
+            {
+                return true;
+            }
         }
 
-        agent.SetDestination(targetWaypoint);
-    }
-
-    private void OnEnable()
-    {
-        PathManager.OnPathChanged += CalculatePath;
-    }
-
-    private void OnDisable()
-    {
-        PathManager.OnPathChanged -= CalculatePath;
+        return false;
     }
 
     private void OnDrawGizmos()
     {
         if (!showDebugPath || currentPath == null || currentPath.Count < 2)
+        {
             return;
+        }
 
         Gizmos.color = Color.red;
 
